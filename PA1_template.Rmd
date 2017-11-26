@@ -1,25 +1,97 @@
 ---
-title: "Reproducible Research: Peer Assessment 1"
-output: 
-  html_document:
-    keep_md: true
+title: "PA1_template.RMD"
+author: "Daniel Castineyra"
+date: "26 de noviembre de 2017"
+output: html_document
 ---
+1. Loading the data and taking out the NA values
+```{r, echo=TRUE}
+setwd("~/Data Science/Rep Research Assig1")
+datos<-read.table("activity.csv",sep = ",",header = TRUE)
+activity<-subset(datos,!is.na(datos$steps))
+library(dplyr)
+```
 
+2. Histogram of the total number of steps taken each day
 
-## Loading and preprocessing the data
+```{r, echo=TRUE}
+## Creating a data frame with the total steps by day
+day<-unique(activity$date)
+day<-as.Date(day)
+total.steps<-as.vector(tapply(activity$steps,activity$date,sum))
+total.steps<-subset(total.steps,!is.na(total.steps))
+## Plotting the histogram
+plot(day,total.steps,type="h",xlab="Day",ylab="Total Steps",main="Total Steps by Day")
+```
 
+3. Mean and median number of steps taken each day
 
+```{r, echo=TRUE}
+## Average and Median by day
+Average.Steps = as.vector(tapply(activity$steps,activity$date,mean))
+Average.Steps<-subset(Average.Steps,!is.na(Average.Steps))
+Median.Steps = as.vector(tapply(activity$steps,activity$date,median))
+Median.Steps<-subset(Median.Steps,!is.na(Median.Steps))
+mm_by_day<-data.frame(Day=day,Average.Steps = Average.Steps,Median.Steps = Median.Steps)
+```
 
-## What is mean total number of steps taken per day?
+This table shows the Average and Median of Steps per Day
 
+```{r,echo=TRUE}
+mm_by_day
+```
 
+4. Time series plot of the average numbers of steps taken
+```{r, echo=TRUE}
+## Time Series of Average Steps
+Average.perinterval<-as.vector(tapply(activity$steps,activity$interval,mean))
+interval<-unique(activity$interval)
+plot(interval,Average.perinterval,type="l",xlab = "Interval",ylab = "Average Steps",main = "Average Steps by Interval")
+```
 
-## What is the average daily activity pattern?
+5. The 5-minute interval that, on average, containis the maximum number of steps
+``` {r, echo=TRUE}
+## Interval with the maximum average steps
+max.interval<-interval[which.max(Average.perinterval)]
+```
 
+Maximum is `r max.interval`
 
+6. Code to describe and show a strategy for imputing missing data
+To fill the NA values we use the average of each interval
+```{r,echo=TRUE}
+## Number of missing values
+mv<-subset(datos,is.na(datos$steps)==TRUE)
+nmv<-length(mv$steps)
+## Filling missing values with average of the interval
+Average.perinterval2<-c(Average.perinterval,Average.perinterval,Average.perinterval,Average.perinterval,Average.perinterval,Average.perinterval,Average.perinterval,Average.perinterval)
+mv<-mutate(mv,steps=Average.perinterval2)
+##new data
+activity2<-merge(activity,mv,all=TRUE)
+day2<-unique(activity2$date)
+day2<-as.Date(day2)
+total.steps2<-as.vector(tapply(activity2$steps,activity2$date,sum))
+```
 
-## Imputing missing values
+7. Histogram of the total number of steps taken each day after missing values are imputed
+```{r,echo=TRUE}
+## Plotting the histogram
+plot(day2,total.steps2,type="h",xlab="Day",ylab="Total Steps",main="Total Steps by Day")
+## Average and Median by day
+Average.Steps2 = as.vector(tapply(activity2$steps,activity2$date,mean))
+Median.Steps2 = as.vector(tapply(activity2$steps,activity2$date,median))
+mm_by_day2<-data.frame(Day=day2,Average.Steps = Average.Steps2,Median.Steps = Median.Steps2)
+```
 
-
-
-## Are there differences in activity patterns between weekdays and weekends?
+8. Panel plot comparting the average number of steps taken per 5-minute interval across weekdays and weekends
+```{r,echo=TRUE}
+activity3<-mutate(activity2,day=weekdays(as.Date(activity2$date)))
+weekday<-subset(activity3,activity3$day=="lunes" | activity3$day=="martes" | activity3$day == "miércoles" | activity3$day=="jueves")
+weekend<-subset(activity3,activity3$day== "viernes" | activity3$day=="sábado" | activity3$day=="domingo")
+Average.weekday<-as.vector(tapply(weekday$steps,weekday$interval,mean))
+Average.weekend<-as.vector(tapply(weekend$steps,weekend$interval,mean))
+interval1<-unique(activity3$interval)
+par(mfrow=c(2,1))
+plot(interval1,Average.weekday,type="l",xlab = "Interval",ylab = "Average Weekday",main = "Average Steps by Interval")
+plot(interval1,Average.weekend,type="l",xlab = "Interval",ylab = "Average Weekend",main = "Average Steps by Interval")
+````
